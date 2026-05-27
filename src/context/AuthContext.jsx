@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { API_BASE_URL } from '../api';
 
 const AuthContext = createContext();
 
@@ -6,102 +7,83 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('sg_token') || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadUser = async () => {
-      if (token) {
-        try {
-          const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+    const initAuth = async () => {
+      try {
+        const token = localStorage.getItem('sg_token');
+        if (token) {
+          const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-          const data = await response.json();
-          if (data.success) {
+          if (response.ok) {
+            const data = await response.json();
             setUser(data.user);
           } else {
-            // Token invalide ou expiré
-            logout();
+            localStorage.removeItem('sg_token');
           }
-        } catch (error) {
-          console.error('Erreur chargement utilisateur connecté :', error);
-          // Ne pas déconnecter en cas d'erreur réseau pour pouvoir travailler en local hors ligne si besoin,
-          // ou déconnecter si nécessaire. Ici, on maintient le cache local au cas où
         }
+      } catch (err) {
+        console.error('Erreur auth:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-
-    loadUser();
-  }, [token]);
+    initAuth();
+  }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-
       const data = await response.json();
-      if (data.success) {
-        localStorage.setItem('sg_token', data.token);
-        setToken(data.token);
-        setUser(data.user);
-        return { success: true, user: data.user };
-      } else {
-        return { success: false, message: data.message };
-      }
-    } catch (error) {
-      console.error('Erreur API Login :', error);
-      return { success: false, message: 'Le serveur backend est injoignable.' };
+      if (!response.ok) throw new Error(data.message || 'Erreur connexion');
+      
+      localStorage.setItem('sg_token', data.token);
+      setUser(data.user);
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.message };
     }
   };
 
   const register = async (userData) => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
       });
-
       const data = await response.json();
-      if (data.success) {
-        localStorage.setItem('sg_token', data.token);
-        setToken(data.token);
-        setUser(data.user);
-        return { success: true, user: data.user };
-      } else {
-        return { success: false, message: data.message };
-      }
-    } catch (error) {
-      console.error('Erreur API Register :', error);
-      return { success: false, message: 'Le serveur backend est injoignable.' };
+      if (!response.ok) throw new Error(data.message || 'Erreur inscription');
+
+      localStorage.setItem('sg_token', data.token);
+      setUser(data.user);
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.message };
     }
   };
 
   const logout = () => {
     localStorage.removeItem('sg_token');
-    setToken(null);
     setUser(null);
   };
 
-  const updateProfile = async (profileData) => {
+  const updateProfile = async (updates) => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/auth/profile', {
+      const token = localStorage.getItem('sg_token');
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(profileData)
+        body: JSON.stringify(updates)
       });
 
       const data = await response.json();

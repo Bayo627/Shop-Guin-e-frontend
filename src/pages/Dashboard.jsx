@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { api, formatPrice } from '../api.js';
+import { api, formatPrice, SERVER_URL, API_BASE_URL } from '../api.js';
 import {
   Plus, Edit, Trash2, Package, BarChart2, Store, LogOut, CheckCircle,
   XCircle, Truck, DollarSign, Clock, HelpCircle, Eye, Save, ShoppingBag,
@@ -243,7 +243,7 @@ export default function Dashboard({ setPage, showToast }) {
     setMsg('');
     try {
       const token = localStorage.getItem('sg_token');
-      const res = await fetch('http://127.0.0.1:5000/api/upload', {
+      const res = await fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -253,7 +253,7 @@ export default function Dashboard({ setPage, showToast }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Erreur lors du téléchargement');
       
-      setForm(f => ({ ...f, main_image: `http://127.0.0.1:5000${data.url}` }));
+      setForm(f => ({ ...f, main_image: `${SERVER_URL}${data.url}` }));
       showToast('📸 Image téléchargée avec succès !', 'success');
     } catch (err) {
       setMsg('❌ ' + err.message);
@@ -308,7 +308,7 @@ export default function Dashboard({ setPage, showToast }) {
   const downloadInvoice = async (orderId) => {
     try {
       const token = localStorage.getItem('sg_token');
-      const response = await fetch(`http://127.0.0.1:5000/api/orders/${orderId}/invoice`, {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/invoice`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
