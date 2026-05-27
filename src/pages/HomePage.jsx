@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api, formatPrice, renderStars } from '../api.js';
 import { ProductCard } from '../App.jsx';
-import { ChevronRight, Zap, Shield, Truck, HeadphonesIcon, Store, Star, ArrowUpRight, ShoppingBag } from 'lucide-react';
+import { ChevronRight, Zap, Shield, Truck, HeadphonesIcon, Store, Star, ArrowUpRight, ShoppingBag, Plus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
 import { motion } from 'framer-motion';
@@ -50,6 +51,7 @@ const FEATURES = [
 ];
 
 export default function HomePage({ setPage, setSelectedProduct, setCatFilter, setKeyword, showToast }) {
+  const { isAuthenticated, isSeller } = useAuth();
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured]   = useState([]);
   const [recent, setRecent]       = useState([]);
@@ -87,6 +89,24 @@ export default function HomePage({ setPage, setSelectedProduct, setCatFilter, se
   const goCategory = (slug) => { 
     setCatFilter(slug); 
     setPage('shop'); 
+  };
+
+  const handleCategoryAddProduct = (cat) => {
+    if (!isAuthenticated) {
+      showToast("🔑 Veuillez vous connecter pour ajouter un produit.", "error");
+      setPage('login');
+      return;
+    }
+    if (!isSeller) {
+      showToast("🏪 Seuls les comptes vendeurs peuvent ajouter des produits.", "error");
+      localStorage.setItem('dash_tab', 'profile');
+      setPage('dashboard');
+      return;
+    }
+    localStorage.setItem('dash_tab', 'products');
+    localStorage.setItem('dash_prefill_category', cat.id);
+    localStorage.setItem('dash_open_create', 'true');
+    setPage('dashboard');
   };
 
   // Skeleton Card component
@@ -245,29 +265,44 @@ export default function HomePage({ setPage, setSelectedProduct, setCatFilter, se
               ][index % 5];
 
               return (
-                <button
+                <div
                   key={cat.id}
-                  onClick={() => goCategory(cat.slug)}
-                  className={`group border rounded-[28px] p-6 text-left transition duration-300 transform hover:-translate-y-2 hover:shadow-lg flex flex-col items-start gap-4 cursor-pointer relative overflow-hidden ${styleClasses}`}
+                  className={`group border rounded-[28px] p-6 text-left transition duration-300 transform hover:-translate-y-2 hover:shadow-lg flex flex-col justify-between items-start gap-4 relative overflow-hidden h-60 ${styleClasses}`}
                 >
                   {/* Category icon backdrop effect */}
                   <div className="absolute right-[-10px] bottom-[-10px] text-6xl opacity-10 transform -rotate-12 group-hover:scale-125 transition duration-300">
                     {cat.icon || '📦'}
                   </div>
                   
-                  <div className="p-3 bg-white rounded-xl shadow-sm text-2xl flex items-center justify-center group-hover:rotate-12 transition">
-                    {cat.icon || '📦'}
+                  <div 
+                    onClick={() => goCategory(cat.slug)}
+                    className="w-full flex-grow cursor-pointer"
+                  >
+                    <div className="p-3 bg-white rounded-xl shadow-sm text-2xl inline-flex items-center justify-center group-hover:rotate-12 transition">
+                      {cat.icon || '📦'}
+                    </div>
+                    
+                    <div className="mt-4">
+                      <h3 className="text-sm font-black tracking-tight leading-snug group-hover:underline">
+                        {cat.name}
+                      </h3>
+                      <span className="text-[10px] font-bold text-gray-500 mt-1 block">
+                        {cat.product_count || 0} articles
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-black tracking-tight leading-snug group-hover:underline">
-                      {cat.name}
-                    </h3>
-                    <span className="text-[10px] font-bold text-gray-500 mt-1 block">
-                      {cat.product_count || 0} articles
-                    </span>
-                  </div>
-                </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategoryAddProduct(cat);
+                    }}
+                    className="w-full mt-auto py-2.5 px-3 bg-white/90 hover:bg-white text-[11px] font-black rounded-xl transition duration-300 flex items-center justify-center gap-1 border border-current hover:shadow-md active:scale-95 text-inherit shrink-0"
+                  >
+                    <Plus size={13} />
+                    <span>Ajouter un produit</span>
+                  </button>
+                </div>
               );
             })}
           </div>

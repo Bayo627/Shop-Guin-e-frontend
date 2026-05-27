@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api, formatPrice } from '../api.js';
 import { ProductCard } from '../App.jsx';
-import { SlidersHorizontal, ChevronDown, Search, X } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Search, X, Plus, Store, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const SORT_OPTIONS = [
   { value: 'created_at-DESC', label: 'Plus récents' },
@@ -11,11 +12,19 @@ const SORT_OPTIONS = [
   { value: 'sales-DESC',      label: 'Plus vendus' },
 ];
 
-export default function ShopPage({ setPage, setSelectedProduct, keyword, setKeyword, categoryFilter, setCatFilter }) {
+export default function ShopPage({ setPage, setSelectedProduct, keyword, setKeyword, categoryFilter, setCatFilter, showToast }) {
+  const { isAuthenticated, isSeller } = useAuth();
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
   const [pagination, setPagination] = useState({});
   const [loading, setLoading]       = useState(true);
+
+  // Vendor filter from VendorsPage
+  const [vendorId, setVendorId]     = useState(() => {
+    const v = localStorage.getItem('shop_vendor_filter');
+    return v ? parseInt(v) : null;
+  });
+  const [vendorInfo, setVendorInfo] = useState(null);
 
   const [filters, setFilters] = useState({
     category: categoryFilter || '',
@@ -25,17 +34,50 @@ export default function ShopPage({ setPage, setSelectedProduct, keyword, setKeyw
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  const handleCategoryAddProduct = (cat) => {
+    if (!isAuthenticated) {
+      showToast("🔑 Veuillez vous connecter pour ajouter un produit.", "error");
+      setPage('login');
+      return;
+    }
+    if (!isSeller) {
+      showToast("🏪 Seuls les comptes vendeurs peuvent ajouter des produits.", "error");
+      localStorage.setItem('dash_tab', 'profile');
+      setPage('dashboard');
+      return;
+    }
+    localStorage.setItem('dash_tab', 'products');
+    localStorage.setItem('dash_prefill_category', cat.id);
+    localStorage.setItem('dash_open_create', 'true');
+    setPage('dashboard');
+  };
+
   useEffect(() => {
     setFilters(f => ({ ...f, category: categoryFilter || '', page: 1 }));
   }, [categoryFilter]);
 
+  // Load categories: vendor-specific when filtering by vendor, all categories otherwise
   useEffect(() => {
-    api.get('/categories').then(d => setCategories(d.categories || [])).catch(() => {});
-  }, []);
+    if (vendorId) {
+      api.get(`/vendors/${vendorId}/categories`)
+        .then(d => setCategories(d.categories || []))
+        .catch(() => setCategories([]));
+      // Also load vendor info for the banner
+      api.get('/vendors/public')
+        .then(d => {
+          const v = (d.vendors || []).find(v => v.id === vendorId);
+          setVendorInfo(v || null);
+        })
+        .catch(() => {});
+    } else {
+      api.get('/categories').then(d => setCategories(d.categories || [])).catch(() => {});
+      setVendorInfo(null);
+    }
+  }, [vendorId]);
 
   useEffect(() => {
     fetchProducts();
-  }, [filters, keyword]);
+  }, [filters, keyword, vendorId]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -46,6 +88,7 @@ export default function ShopPage({ setPage, setSelectedProduct, keyword, setKeyw
       if (filters.minPrice) params.set('minPrice', filters.minPrice);
       if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
       if (filters.type)     params.set('type',     filters.type);
+      if (vendorId)         params.set('vendorId', vendorId);
       params.set('sortBy', filters.sortBy);
       params.set('order',  filters.order);
       params.set('page',   filters.page);
@@ -63,21 +106,60 @@ export default function ShopPage({ setPage, setSelectedProduct, keyword, setKeyw
     setFilters(f => ({ ...f, sortBy, order, page: 1 }));
   };
 
+  const clearVendorFilter = () => {
+    setVendorId(null);
+    localStorage.removeItem('shop_vendor_filter');
+    setFilters(f => ({ ...f, category: '', page: 1 }));
+    setCatFilter('');
+  };
+
   const clearFilters = () => {
     setFilters({ category: '', minPrice: '', maxPrice: '', type: '', sortBy: 'created_at', order: 'DESC', page: 1 });
     setKeyword('');
     setCatFilter('');
+    clearVendorFilter();
   };
 
-  const hasFilters = filters.category || filters.minPrice || filters.maxPrice || filters.type || keyword;
+  const hasFilters = filters.category || filters.minPrice || filters.maxPrice || filters.type || keyword || vendorId;
 
   return (
     <div className="shop-page fade-in">
       <div className="container">
+        {/* Vendor Banner */}
+        {vendorInfo && (
+          <div className="mb-6 bg-gradient-to-r from-[#2B2D42] to-[#1A1C2C] text-white rounded-2xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-40 h-40 bg-[#009460] rounded-full blur-[80px] opacity-20 pointer-events-none"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-lg font-black">
+                {vendorInfo.store_logo_url ? (
+                  <img src={vendorInfo.store_logo_url} alt={vendorInfo.store_name} className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <Store size={22} className="text-[#FCD116]" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-sm font-black tracking-wide">
+                  🏪 {vendorInfo.store_name}
+                </h2>
+                <p className="text-[10px] text-gray-300 font-semibold mt-0.5">
+                  par {vendorInfo.seller_name} • {vendorInfo.city || 'Guinée'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={clearVendorFilter}
+              className="relative z-10 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold text-white transition flex items-center gap-1.5"
+            >
+              <ArrowLeft size={14} />
+              <span>Toutes les boutiques</span>
+            </button>
+          </div>
+        )}
+
         {/* En-tête */}
         <div className="shop-header">
           <div>
-            <h1 className="section-title">Boutique</h1>
+            <h1 className="section-title">{vendorInfo ? vendorInfo.store_name : 'Boutique'}</h1>
             <p className="shop-count">
               {loading ? '…' : `${pagination.total || 0} produit(s) trouvé(s)`}
               {keyword && <> pour "<strong>{keyword}</strong>"</>}
@@ -109,15 +191,27 @@ export default function ShopPage({ setPage, setSelectedProduct, keyword, setKeyw
             <div className="filter-group">
               <label className="filter-label">Catégorie</label>
               {categories.map(cat => (
-                <label key={cat.id} className="filter-radio">
-                  <input
-                    type="radio" name="cat" value={cat.slug}
-                    checked={filters.category === cat.slug}
-                    onChange={() => { setFilters(f => ({ ...f, category: cat.slug, page: 1 })); setCatFilter(cat.slug); }}
-                  />
-                  <span>{cat.icon} {cat.name}</span>
-                  <span className="filter-count">{cat.product_count}</span>
-                </label>
+                <div key={cat.id} className="flex items-center justify-between group/cat py-1">
+                  <label className="filter-radio flex-grow cursor-pointer">
+                    <input
+                      type="radio" name="cat" value={cat.slug}
+                      checked={filters.category === cat.slug}
+                      onChange={() => { setFilters(f => ({ ...f, category: cat.slug, page: 1 })); setCatFilter(cat.slug); }}
+                    />
+                    <span>{cat.icon} {cat.name}</span>
+                    <span className="filter-count">{cat.product_count}</span>
+                  </label>
+                  <button
+                    title="Ajouter un produit dans cette catégorie"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleCategoryAddProduct(cat);
+                    }}
+                    className="p-1 text-gray-400 hover:text-[#009460] hover:bg-emerald-50 rounded-lg transition duration-200 ml-1 shrink-0 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover/cat:opacity-100 focus:opacity-100"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
               ))}
               <label className="filter-radio">
                 <input type="radio" name="cat" value="" checked={!filters.category}

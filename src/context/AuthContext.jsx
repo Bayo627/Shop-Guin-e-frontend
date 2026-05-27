@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       if (token) {
         try {
-          const response = await fetch('http://localhost:5000/api/auth/me', {
+          const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('sg_token', data.token);
         setToken(data.token);
         setUser(data.user);
-        return { success: true };
+        return { success: true, user: data.user };
       } else {
         return { success: false, message: data.message };
       }
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch('http://127.0.0.1:5000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('sg_token', data.token);
         setToken(data.token);
         setUser(data.user);
-        return { success: true };
+        return { success: true, user: data.user };
       } else {
         return { success: false, message: data.message };
       }
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch('http://127.0.0.1:5000/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

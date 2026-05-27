@@ -271,15 +271,9 @@ const Navbar = ({ page, setPage, keyword, setKeyword, setCatFilter, showToast })
                         </span>
                       </div>
                       
-                      <button className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-xl transition text-left font-medium" onClick={() => go('buyer-dashboard')}>
-                        <ClipboardList size={16} className="text-gray-400" /> Mes Commandes
+                      <button className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-xl transition text-left font-medium" onClick={() => go('dashboard')}>
+                        <Store size={16} className="text-[#009460]" /> Mon Tableau de Bord
                       </button>
-                      
-                      {isSeller && (
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-xl transition text-left font-medium" onClick={() => go('seller-dashboard')}>
-                          <Store size={16} className="text-[#F4A261]" /> Tableau de Bord Vendeur
-                        </button>
-                      )}
                       
                       {isAdmin && (
                         <button className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-xl transition text-left font-medium" onClick={() => go('admin')}>
@@ -332,8 +326,9 @@ const Navbar = ({ page, setPage, keyword, setKeyword, setCatFilter, showToast })
               <span>{c.name}</span>
             </button>
           ))}
-          <button onClick={() => go('shop')} className="ml-auto text-[#009460] hover:text-[#007A33] transition-colors flex items-center gap-1">
-            Voir Tout l'Artisanat ➜
+          <button onClick={() => go('vendors')} className="ml-auto text-[#009460] hover:text-[#007A33] transition-colors flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+            <Store size={14} />
+            Nos Boutiques
           </button>
         </nav>
       </div>
@@ -377,6 +372,9 @@ const Navbar = ({ page, setPage, keyword, setKeyword, setCatFilter, showToast })
             <hr className="border-gray-100 my-4" />
 
             <div className="flex flex-col gap-2.5">
+              <button onClick={() => go('vendors')} className="w-full py-2.5 border border-emerald-200 text-[#009460] bg-emerald-50 rounded-xl text-xs font-bold text-center hover:bg-emerald-100 transition flex items-center justify-center gap-1.5">
+                <Store size={14} /> Voir les Boutiques
+              </button>
               <button onClick={() => go('shop')} className="w-full py-2.5 border border-gray-200 text-[#2B2D42] rounded-xl text-xs font-bold text-center hover:bg-gray-50 transition">
                 Visiter la Boutique
               </button>
@@ -423,8 +421,7 @@ const Footer = ({ setPage }) => (
             ['home', 'Accueil Principal'],
             ['shop', 'Toute la Boutique'],
             ['cart', 'Mon Panier d\'Achats'],
-            ['buyer-dashboard', 'Tableau de Bord Acheteur'],
-            ['seller-dashboard', 'Créer un Compte Vendeur']
+            ['dashboard', 'Mon Tableau de Bord']
           ].map(([p, l]) => (
             <li key={p}>
               <button onClick={() => setPage(p)} className="hover:text-[#E63946] transition">
@@ -636,10 +633,10 @@ export default function App() {
     checkout:         React.lazy(() => import('./pages/CheckoutPage.jsx')),
     login:            React.lazy(() => import('./pages/LoginPage.jsx')),
     register:         React.lazy(() => import('./pages/RegisterPage.jsx')),
-    'buyer-dashboard':React.lazy(() => import('./pages/BuyerDashboard.jsx')),
-    'seller-dashboard':React.lazy(() => import('./pages/SellerDashboard.jsx')),
+    dashboard:        React.lazy(() => import('./pages/Dashboard.jsx')),
     admin:            React.lazy(() => import('./pages/AdminPanel.jsx')),
     chat:             React.lazy(() => import('./pages/ChatPage.jsx')),
+    vendors:          React.lazy(() => import('./pages/VendorsPage.jsx')),
   };
 
   const PageComponent = pages[page] || pages['home'];

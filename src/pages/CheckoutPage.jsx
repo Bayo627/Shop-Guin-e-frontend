@@ -199,7 +199,7 @@ export default function CheckoutPage({ setPage }) {
               Vous serez notifié par SMS/email dès validation. Délai habituel : <strong>24h ouvrables.</strong>
             </p>
             <div className="success-actions">
-              <button className="btn btn-primary" onClick={() => setPage('buyer-dashboard')}>
+              <button className="btn btn-primary" onClick={() => setPage('dashboard')}>
                 📦 Suivre mes commandes
               </button>
               <button className="btn btn-outline" onClick={() => setPage('shop')}>

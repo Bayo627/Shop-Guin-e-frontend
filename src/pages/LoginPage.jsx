@@ -14,8 +14,16 @@ export default function LoginPage({ setPage }) {
     setError(''); setLoading(true);
     const res = await login(form.email, form.password);
     setLoading(false);
-    if (res.success) setPage('home');
-    else setError(res.message);
+    if (res.success) {
+      // Rediriger selon le rôle de l'utilisateur
+      if (res.user?.role === 'admin') {
+        setPage('admin');
+      } else {
+        setPage('dashboard');
+      }
+    } else {
+      setError(res.message);
+    }
   };
 
   const quickFill = (email) => setForm({ email, password: 'password123' });

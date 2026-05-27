@@ -1,5 +1,5 @@
 // Utilitaire centralisé pour tous les appels API vers le backend
-const BASE = 'http://localhost:5000/api';
+const BASE = 'http://127.0.0.1:5000/api';
 
 const getToken = () => localStorage.getItem('sg_token');
 
