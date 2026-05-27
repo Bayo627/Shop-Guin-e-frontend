@@ -98,6 +98,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const token = localStorage.getItem('sg_token');
+
   const value = {
     user,
     token,
